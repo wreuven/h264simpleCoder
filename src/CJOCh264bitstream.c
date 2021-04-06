@@ -5,28 +5,29 @@
  *      Author: Jordi Cenzano (www.jordicenzano.name)
  */
 
+#define DEFINE_HERE
 #include "CJOCh264bitstream.h"
 
-CJOCh264bitstream::CJOCh264bitstream(FILE *pOutBinaryFile)
+void CJOCh264bitstream_Create(FILE *pOutBinaryFile)
 {
 	clearbuffer();
 
 	m_pOutFile = pOutBinaryFile;
 }
 
-CJOCh264bitstream::~CJOCh264bitstream()
+void CJOCh264bitstream_Destroy()
 {
 	close();
 }
 
-void CJOCh264bitstream::clearbuffer()
+void clearbuffer()
 {
 	memset (&m_buffer,0,sizeof (unsigned char)* BUFFER_SIZE_BITS);
 	m_nLastbitinbuffer = 0;
 	m_nStartingbyte = 0;
 }
 
-int CJOCh264bitstream::getbitnum (unsigned long lval, int nNumbit)
+int getbitnum (unsigned long lval, int nNumbit)
 {
 	int lrc = 0;
 
@@ -37,7 +38,7 @@ int CJOCh264bitstream::getbitnum (unsigned long lval, int nNumbit)
 	return lrc;
 }
 
-void CJOCh264bitstream::addbittostream (int nVal)
+void addbittostream (int nVal)
 {
 	if (m_nLastbitinbuffer >= BUFFER_SIZE_BITS)
 	{
@@ -65,7 +66,7 @@ void CJOCh264bitstream::addbittostream (int nVal)
 	m_nLastbitinbuffer++;
 }
 
-void CJOCh264bitstream::addbytetostream (int nVal)
+void addbytetostream (int nVal)
 {
 	if (m_nLastbitinbuffer >= BUFFER_SIZE_BITS)
 	{
@@ -80,7 +81,7 @@ void CJOCh264bitstream::addbytetostream (int nVal)
 
 	//Check if it is byte aligned
 	if (nBitPosInByte != 7)
-		throw "Error: inserting not aligment byte";
+		assert( 0 && "Error: inserting not aligment byte");
 
 	//Add all byte to buffer
 	m_buffer[nBytePos] = (unsigned char) nVal;
@@ -88,7 +89,7 @@ void CJOCh264bitstream::addbytetostream (int nVal)
 	m_nLastbitinbuffer = m_nLastbitinbuffer + 8;
 }
 
-void CJOCh264bitstream::dobytealign()
+void dobytealign()
 {
 	//Check if the last bit in buffer is multiple of 8
 	int nr = m_nLastbitinbuffer % 8;
@@ -96,21 +97,21 @@ void CJOCh264bitstream::dobytealign()
 		m_nLastbitinbuffer = m_nLastbitinbuffer + (8 - nr);
 }
 
-void CJOCh264bitstream::savebufferbyte(bool bemulationprevention)
+void savebufferbyte()
 {
-	bool bemulationpreventionexecuted = false;
+	int bemulationpreventionexecuted = 0;
 
 	if (m_pOutFile == NULL)
-		throw "Error: out file is NULL";
+		assert(0 && "Error: out file is NULL");
 
 	//Check if the last bit in buffer is multiple of 8
 	if ((m_nLastbitinbuffer % 8)  != 0)
-		throw "Error: Save to file must be byte aligned";
+		assert (0 && "Error: Save to file must be byte aligned");
 
 	if ((m_nLastbitinbuffer / 8) <= 0)
-		throw "Error: NO bytes to save";
+		assert ( 0 && "Error: NO bytes to save");
 
-	if (bemulationprevention == true)
+	if (1)
 	{
 		//Emulation prevention will be used:
 		/*As per h.264 spec,
@@ -154,11 +155,11 @@ void CJOCh264bitstream::savebufferbyte(bool bemulationprevention)
 			//All bytes in buffer are saved, so clear the buffer
 			clearbuffer();
 
-			bemulationpreventionexecuted = true;
+			bemulationpreventionexecuted = 1;
 		}
 	}
 
-	if (bemulationpreventionexecuted == false)
+	if (bemulationpreventionexecuted == 0)
 	{
 		//No emulation prevention was used
 
@@ -175,10 +176,10 @@ void CJOCh264bitstream::savebufferbyte(bool bemulationprevention)
 
 //Public functions
 
-void CJOCh264bitstream::addbits (unsigned long lval, int nNumbits)
+void addbits (unsigned long lval, int nNumbits)
 {
 	if ((nNumbits <= 0 )||(nNumbits > 64))
-		throw "Error: numbits must be between 1 ... 64";
+		assert ( 0 && "Error: numbits must be between 1 ... 64");
 
 	int nBit = 0;
 	int n = nNumbits-1;
@@ -191,7 +192,7 @@ void CJOCh264bitstream::addbits (unsigned long lval, int nNumbits)
 	}
 }
 
-void CJOCh264bitstream::addbyte (unsigned char cByte)
+void addbyte (unsigned char cByte)
 {
 	//Byte alignment optimization
 	if ((m_nLastbitinbuffer % 8)  == 0)
@@ -204,7 +205,7 @@ void CJOCh264bitstream::addbyte (unsigned char cByte)
 	}
 }
 
-void CJOCh264bitstream::addexpgolombunsigned (unsigned long lval)
+void addexpgolombunsigned (unsigned long lval)
 {
 	//it implements unsigned exp golomb coding
 
@@ -217,7 +218,7 @@ void CJOCh264bitstream::addexpgolombunsigned (unsigned long lval)
 	addbits(lvalint,nnumbits);
 }
 
-void CJOCh264bitstream::addexpgolombsigned (long lval)
+void addexpgolombsigned (long lval)
 {
 	//it implements a signed exp golomb coding
 
@@ -228,16 +229,14 @@ void CJOCh264bitstream::addexpgolombsigned (long lval)
 	addexpgolombunsigned(lvalint);
 }
 
-void CJOCh264bitstream::add4bytesnoemulationprevention (unsigned int nVal, bool bDoAlign)
+void add4bytesnoemulationprevention (unsigned int nVal)
 {
 	//Used to add NAL header stream
 	//Remember: NAL header is byte oriented
 
-	if (bDoAlign == true)
-		dobytealign();
 
 	if ((m_nLastbitinbuffer % 8) != 0)
-		throw "Error: Save to file must be byte aligned";
+		assert ( 0 && "Error: Save to file must be byte aligned");
 
 	while (m_nLastbitinbuffer != 0)
 		savebufferbyte();
@@ -255,7 +254,7 @@ void CJOCh264bitstream::add4bytesnoemulationprevention (unsigned int nVal, bool 
 	fwrite(&cbyte, 1, 1, m_pOutFile);
 }
 
-void CJOCh264bitstream::close()
+void close()
 {
 	//Flush the data in stream buffer
 

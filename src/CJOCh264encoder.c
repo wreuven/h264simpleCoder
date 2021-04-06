@@ -5,13 +5,15 @@
  *      Author: Jordi Cenzano (www.jordicenzano.name)
  */
 
+#define DEFINE_NOW
 #include "CJOCh264encoder.h"
 
 //Private functions
 
 //Contructor
-CJOCh264encoder::CJOCh264encoder(FILE *pOutFile):CJOCh264bitstream(pOutFile)
+void CJOCh264encoder_Create(FILE *pOutFile)
 {
+	CJOCh264bitstream_Create(pOutFile);
 	m_lNumFramesAdded = 0;
 
 	memset (&m_frame, 0, sizeof (frame_t));
@@ -19,13 +21,13 @@ CJOCh264encoder::CJOCh264encoder(FILE *pOutFile):CJOCh264bitstream(pOutFile)
 }
 
 //Destructor
-CJOCh264encoder::~CJOCh264encoder()
+void CJOCh264encoder_Destroy()
 {
 	free_video_src_frame ();
 }
 
 //Free the allocated video frame mem
-void CJOCh264encoder::free_video_src_frame ()
+void free_video_src_frame ()
 {
 	if (m_frame.yuv420pframe.pYCbCr != NULL)
 		free (m_frame.yuv420pframe.pYCbCr);
@@ -34,10 +36,10 @@ void CJOCh264encoder::free_video_src_frame ()
 }
 
 //Alloc mem to store a video frame
-void CJOCh264encoder::alloc_video_src_frame ()
+void alloc_video_src_frame ()
 {
 	if (m_frame.yuv420pframe.pYCbCr != NULL)
-		throw "Error: null values in frame";
+		assert ( 0 && "Error: null values in frame");
 
 	int nYsize = m_frame.nYwidth * m_frame.nYheight;
 	int nCsize = m_frame.nCwidth * m_frame.nCheight;
@@ -46,11 +48,11 @@ void CJOCh264encoder::alloc_video_src_frame ()
 	m_frame.yuv420pframe.pYCbCr = (unsigned char*) malloc (sizeof (unsigned char) * m_frame.nyuv420pframesize);
 
 	if (m_frame.yuv420pframe.pYCbCr == NULL)
-		throw "Error: memory alloc";
+		assert ( 0 && "Error: memory alloc");
 }
 
 //Creates and saves the NAL SPS (including VUI) (one per file)
-void CJOCh264encoder::create_sps (int nImW, int nImH, int nMbW, int nMbH, int nFps, int nSARw, int nSARh)
+void create_sps (int nImW, int nImH, int nMbW, int nMbH, int nFps, int nSARw, int nSARh)
 {
 	add4bytesnoemulationprevention (0x000001); // NAL header
 	addbits (0x0,1); // forbidden_bit
@@ -112,7 +114,7 @@ void CJOCh264encoder::create_sps (int nImW, int nImH, int nMbW, int nMbH, int nF
 }
 
 //Creates and saves the NAL PPS (one per file)
-void CJOCh264encoder::create_pps ()
+void create_pps ()
 {
 	add4bytesnoemulationprevention (0x000001); // NAL header
 	addbits (0x0,1); // forbidden_bit
@@ -139,7 +141,7 @@ void CJOCh264encoder::create_pps ()
 }
 
 //Creates and saves the NAL SLICE (one per frame)
-void CJOCh264encoder::create_slice_header(unsigned long lFrameNum)
+void create_slice_header(unsigned long lFrameNum)
 {
 	add4bytesnoemulationprevention (0x000001); // NAL header
 	addbits (0x0,1); // forbidden_bit
@@ -164,19 +166,19 @@ void CJOCh264encoder::create_slice_header(unsigned long lFrameNum)
 }
 
 //Creates and saves the SLICE footer (one per SLICE)
-void CJOCh264encoder::create_slice_footer()
+void create_slice_footer()
 {
 	addbits(0x1,1); // rbsp stop bit
 }
 
 //Creates and saves the macroblock header(one per macroblock)
-void CJOCh264encoder::create_macroblock_header ()
+void create_macroblock_header ()
 {
 	addexpgolombunsigned(25); // mb_type (I_PCM)
 }
 
 //Creates & saves a macroblock (coded INTRA 16x16)
-void CJOCh264encoder::create_macroblock(unsigned int nYpos, unsigned int nXpos)
+void create_macroblock(unsigned int nYpos, unsigned int nXpos)
 {
 	unsigned int x,y;
 
@@ -214,16 +216,15 @@ void CJOCh264encoder::create_macroblock(unsigned int nYpos, unsigned int nXpos)
 	}
 }
 
-
 //public functions
 
 //Initilizes the h264 coder (mini-coder)
-void CJOCh264encoder::IniCoder (int nImW, int nImH, int nImFps, CJOCh264encoder::enSampleFormat SampleFormat, int nSARw, int nSARh)
+void IniCoder (int nImW, int nImH, int nImFps, enSampleFormat SampleFormat, int nSARw, int nSARh)
 {
 	m_lNumFramesAdded = 0;
 
 	if (SampleFormat != SAMPLE_FORMAT_YUV420p)
-		throw "Error: SAMPLE FORMAT not allowed. Only yuv420p is allowed in this version";
+		assert ( 0 && "Error: SAMPLE FORMAT not allowed. Only yuv420p is allowed in this version");
 
 	free_video_src_frame ();
 
@@ -247,7 +248,7 @@ void CJOCh264encoder::IniCoder (int nImW, int nImH, int nImFps, CJOCh264encoder:
 
 		//In this implementation only picture sizes multiples of macroblock size (16x16) are allowed
 		if (((nImW % MACROBLOCK_Y_WIDTH) != 0)||((nImH % MACROBLOCK_Y_HEIGHT) != 0))
-			throw "Error: size not allowed. Only multiples of macroblock are allowed (macroblock size is: 16x16)";
+			assert ( 0 && "Error: size not allowed. Only multiples of macroblock are allowed (macroblock size is: 16x16)");
 	}
 	m_nFps = nImFps;
 
@@ -260,22 +261,22 @@ void CJOCh264encoder::IniCoder (int nImW, int nImH, int nImFps, CJOCh264encoder:
 }
 
 //Returns the frame pointer to load the video frame
-void* CJOCh264encoder::GetFramePtr()
+void* GetFramePtr()
 {
 	if (m_frame.yuv420pframe.pYCbCr == NULL)
-		throw "Error: video frame is null (not initialized)";
+		assert ( 0 && "Error: video frame is null (not initialized)");
 
 	return (void*) m_frame.yuv420pframe.pYCbCr;
 }
 
 //Returns the the allocated size for video frame
-unsigned int CJOCh264encoder::GetFrameSize()
+unsigned int GetFrameSize()
 {
 	return m_frame.nyuv420pframesize;
 }
 
 //Codifies & save the video frame (it only uses 16x16 intra PCM -> NO COMPRESSION!)
-void CJOCh264encoder::CodeAndSaveFrame()
+void CodeAndSaveFrame()
 {
 	//The slice header is not byte aligned, so the first macroblock header is not byte aligned
 	create_slice_header (m_lNumFramesAdded);
@@ -297,13 +298,13 @@ void CJOCh264encoder::CodeAndSaveFrame()
 }
 
 //Returns the number of codified frames
-unsigned long CJOCh264encoder::GetSavedFrames()
+unsigned long GetSavedFrames()
 {
 	return m_lNumFramesAdded;
 }
 
 //Closes the h264 coder saving the last bits in the buffer
-void CJOCh264encoder::CloseCoder ()
+void CloseCoder ()
 {
 	close();
 }

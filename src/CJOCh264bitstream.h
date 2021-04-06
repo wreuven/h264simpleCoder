@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 
 #define BUFFER_SIZE_BITS 24		/*! Buffer size in bits used for emulation prevention */
 #define BUFFER_SIZE_BYTES (24/8)	/*! Buffer size in bytes used for emulation prevention */
@@ -24,17 +25,23 @@
  It is used to create the h264 bit oriented stream, it contains different functions that helps you to create the h264 compliant stream (bit oriented, exp golomb coder)
  */
 
+#ifdef DEFINE_NOW
+#define EXTERN 
+#else
+#define EXTERN extern
+#endif
+
 /*! Buffer  */
-unsigned char m_buffer[BUFFER_SIZE_BITS];
+EXTERN unsigned char m_buffer[BUFFER_SIZE_BITS];
 
 /*! Bit buffer index  */
-unsigned int m_nLastbitinbuffer;
+EXTERN unsigned int m_nLastbitinbuffer;
 
 /*! Starting byte indicator  */
-unsigned int m_nStartingbyte;
+EXTERN unsigned int m_nStartingbyte;
 
 /*! Pointer to output file */
-FILE *m_pOutFile;
+EXTERN FILE *m_pOutFile;
 
 //! Clears the buffer
 void clearbuffer();
@@ -63,20 +70,20 @@ void addbytetostream (int nVal);
 /*!
 	 \param bemulationprevention Indicates if it will insert the emulation prevention byte or not (when it is needed)
  */
-void savebufferbyte(bool bemulationprevention = true);
+void savebufferbyte();
 
 //! Constructor
 /*!
 	 \param pOutBinaryFile The output file pointer
  */
-CJOCh264bitstream(FILE *pOutBinaryFile);
+void CJOCh264bitstream_Create(FILE *pOutBinaryFile);
 
 //! Add 4 bytes to h264 bistream without taking into acount the emulation prevention. Used to add the NAL header to the h264 bistream
 /*!
 	 \param nVal The 32b value to add
 	 \param bDoAlign Indicates if the function will insert 0 in order to create a byte aligned stream before adding nVal 4 bytes to stream. If you try to call this function and the stream is not byte aligned an exception will be thrown
  */
-void add4bytesnoemulationprevention (unsigned int nVal, bool bDoAlign = false);
+void add4bytesnoemulationprevention (unsigned int nVal);
 
 //! Adds nNumbits of lval to the end of h264 bitstream
 /*!

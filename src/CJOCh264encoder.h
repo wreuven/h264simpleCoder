@@ -8,9 +8,16 @@
 #ifndef CJOCH264ENCODER_H_
 #define CJOCH264ENCODER_H_
 
+#ifdef DEFINE_NOW
+#define EXTERN 
+#else
+#define EXTERN extern
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "CJOCh264bitstream.h"
 
@@ -18,19 +25,14 @@
 /*!
  It is used to create the h264 compliant stream
  */
-class CJOCh264encoder : CJOCh264bitstream
-{
-public:
-
 	/**
 	 * Allowed sample formats
 	 */
-	enum enSampleFormat
+	typedef enum _enSampleFormat
 	{
 		SAMPLE_FORMAT_YUV420p//!< SAMPLE_FORMAT_YUV420p
-	};
+	} enSampleFormat;
 
-private:
 	/*!Set the used Y macroblock size for I PCM in YUV420p */
 	#define MACROBLOCK_Y_WIDTH	16
 	#define MACROBLOCK_Y_HEIGHT	16
@@ -63,13 +65,13 @@ private:
 	}frame_t;
 
 	/*! The frame var*/
-	frame_t m_frame;
+	EXTERN frame_t m_frame;
 
 	/*! The frames per second var*/
-	int m_nFps;
+	EXTERN int m_nFps;
 
 	/*! Number of frames sent to the output */
-	unsigned long m_lNumFramesAdded;
+	EXTERN unsigned long m_lNumFramesAdded;
 
 	//! Frees the frame yuv420pframe allocated memory
 	void free_video_src_frame ();
@@ -111,15 +113,14 @@ private:
 	 */
 	void create_macroblock(unsigned int nYpos, unsigned int nXpos);
 
-public:
 	//! Constructor
 	/*!
 		 \param pOutFile The output file pointer
 	 */
-	CJOCh264encoder(FILE *pOutFile);
+	void CJOCh264encoder_Create(FILE *pOutFile);
 
 	//! Destructor
-	virtual ~CJOCh264encoder();
+	void CJOCh264encoder_Destroy();
 
 	//! Initializes the coder
 	/*!
@@ -130,7 +131,7 @@ public:
 		\param nSARw Indicates the horizontal size of the sample aspect ratio (typical values are:1, 4, 16, etc)
 		\param nSARh Indicates the vertical size of the sample aspect ratio (typical values are:1, 3, 9, etc)
 	*/
-	void IniCoder (int nImW, int nImH, int nImFps, CJOCh264encoder::enSampleFormat SampleFormat, int nSARw = 1, int nSARh = 1);
+	void IniCoder (int nImW, int nImH, int nImFps, enSampleFormat SampleFormat, int nSARw, int nSARh);
 
 	//! Returns the frame pointer
 	/*!
@@ -155,6 +156,5 @@ public:
 
 	//! Flush all data and save the trailing bits
 	void CloseCoder ();
-};
 
 #endif /* CJOCH264ENCODER_H_ */

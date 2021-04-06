@@ -6,10 +6,9 @@
 // Description : Simple h264 encoder
 //============================================================================
 
-#include <iostream>
-#include "CJOCh264encoder.h"
+#define _CRT_SECURE_NO_WARNINGS
 
-using namespace std;
+#include "CJOCh264encoder.h"
 
 int main(int argc, char **argv)
 {
@@ -88,6 +87,7 @@ int main(int argc, char **argv)
 	FILE *pfsrc = NULL;
 	FILE *pfdst = NULL;
 
+
 	pfsrc = fopen (szInputFile,"rb");
 	if (pfsrc == NULL)
 	{
@@ -102,58 +102,50 @@ int main(int argc, char **argv)
 		return nRc;
 	}
 
-	try
+	//Instantiate the h264 coder
+	CJOCh264encoder_Create(pfdst);
+
+	//Initialize the h264 coder with frame parameters
+	IniCoder(nImWidth,nImHeight,nFps,SAMPLE_FORMAT_YUV420p, nSARw, nSARh);
+
+	int nSavedFrames = 0;
+	char szLog[256];
+
+	//Iterate through all frames
+	while (! feof(pfsrc))
 	{
-		//Instantiate the h264 coder
-		CJOCh264encoder *ph264encoder = new CJOCh264encoder(pfdst);
+		//Get frame pointer to fill
+		void *pFrame = GetFramePtr ();
 
-		//Initialize the h264 coder with frame parameters
-		ph264encoder->IniCoder(nImWidth,nImHeight,nFps,CJOCh264encoder::SAMPLE_FORMAT_YUV420p, nSARw, nSARh);
+		//Get the size allocated in pFrame
+		unsigned int nFrameSize = GetFrameSize();
 
-		int nSavedFrames = 0;
-		char szLog[256];
-
-		//Iterate through all frames
-		while (! feof(pfsrc))
+		//Load frame from disk and load it into pFrame
+		size_t nreaded = fread (pFrame,1, nFrameSize, pfsrc);
+		if (nreaded != nFrameSize)
 		{
-			//Get frame pointer to fill
-			void *pFrame = ph264encoder->GetFramePtr ();
-
-			//Get the size allocated in pFrame
-			unsigned int nFrameSize = ph264encoder->GetFrameSize();
-
-			//Load frame from disk and load it into pFrame
-			size_t nreaded = fread (pFrame,1, nFrameSize, pfsrc);
-			if (nreaded != nFrameSize)
-			{
-				if (! feof(pfsrc))
-					throw "Error: Reading frame";
-			}
-			else
-			{
-				//Encode & save frame
-				ph264encoder->CodeAndSaveFrame();
-
-				//Get the number of saved frames
-				nSavedFrames = ph264encoder->GetSavedFrames();
-
-				//Show the number of saved / encoded frames iin console
-				sprintf(szLog,"Saved frame num: %d", nSavedFrames - 1);
-				puts (szLog);
-			}
+			if (! feof(pfsrc))
+				assert ( 0 && "Error: Reading frame");
 		}
+		else
+		{
+			//Encode & save frame
+			CodeAndSaveFrame();
 
-		//Close encoder
-		ph264encoder->CloseCoder();
+			//Get the number of saved frames
+			nSavedFrames = GetSavedFrames();
 
-		//Set return code to 0
-		nRc = 0;
+			//Show the number of saved / encoded frames iin console
+			sprintf(szLog,"Saved frame num: %d", nSavedFrames - 1);
+			puts (szLog);
+		}
 	}
-	catch (const char *szErrorDesc)
-	{
-		//Show the error description on console
-		puts (szErrorDesc);
-	}
+
+	//Close encoder
+	CloseCoder();
+
+	//Set return code to 0
+	nRc = 0;
 
 	//Close previously opened files
 	if (pfsrc != NULL)
