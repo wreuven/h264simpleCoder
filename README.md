@@ -1,6 +1,8 @@
 h264simpleCoder
 ===============
 
+THIS FORK HAS BEEN VERY CRUDELY CHANGED TO C CODE. NOT EVEN TESTED YET.
+
 With the aim to improve my understanding of h264 bitstream and its techniques I have created the following code in C++ that generates a compliant h264 file from a YUV420p file.
 
 First of all I have to say that the following source code is NOT a h264 encoder but it generates a compliant (playable) h264 stream, this means that the size of output file will be slightly bigger than the size of the input file. This it is because I have used only I_PCM macroblock codification (non compressed format) to describe the images in h264 stream.
